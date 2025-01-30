@@ -35,4 +35,4 @@ class AlpacaIntegration:
 
 if __name__ == '__main__':
 	alpaca = AlpacaIntegration(getenv('API_KEY'), getenv('SECRET_KEY'))
-	print(alpaca.get_ticker_data("SPY"))
+	print(alpaca.get_ticker_data("SPY", TimeFrame.Day, 3650))
