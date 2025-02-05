@@ -27,6 +27,8 @@ class Algorithm:
 		# list of subscribed stocks
 		self.subscribed = []
 
+		self.log_file = open('log.txt', 'w')
+
 	
 	@property
 	def buying_power(self):
@@ -42,21 +44,21 @@ class Algorithm:
 
 		try:
 			self.client.submit_order(order)
-			print(f"✅ Order placed: {side} {qty} shares of {symbol}")
+			self.log(f"✅ Order placed: {side} {qty} shares of {symbol}")
 		except Exception as e:
-			print(f"❌ Order failed: {e}")
+			self.log(f"❌ Order failed: {e}")
 	
 	
 	def add_equity(self, symbol):
 		"""Adds equity to watchlist"""
 		try:
-			print(f"Adding {symbol} to watchlist")
+			self.log(f"Adding {symbol} to watchlist")
 			self.stream.subscribe_bars(self.on_bar, symbol)
 			self.stream.subscribe_trades(self.on_traded, symbol)
 			self.subscribed.append(symbol)
 		except Exception as e:
-			print(f"Failed to add {symbol} to watchlist")
-			print(e)
+			self.log(f"Failed to add {symbol} to watchlist")
+			self.log(e)
 	
 	
 	@property
@@ -79,12 +81,22 @@ class Algorithm:
 		pass
 	
 
+	def log(self, message):
+		"""Output logs to log.txt"""
+		log_msg = f"{datetime.now()}: {message}"
+		print(log_msg)
+		self.log_file.write(f"{log_msg}\n")
+		self.log_file.flush()
+
 	def run(self):
-		print("Connecting to to Alpaca Websocket")
+		self.log("Connecting to to Alpaca Websocket")
 		try:
 			self.stream.run()
 		except Exception as e:
-			print(e)
+			self.log(e)
+		finally:
+			self.log("Closing log file")
+			self.log_file.close()
 		
 	
 

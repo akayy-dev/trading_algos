@@ -45,13 +45,13 @@ class RSI(Algorithm):
 
 		rsi = talib.RSI(close_prices, timeperiod=len(close_prices) - 1)[-1]
 
-		print(f"RSI for {bar.symbol} @ {bar.timestamp}: {rsi}")
+		self.log(f"RSI for {bar.symbol} @ {bar.timestamp}: {rsi}")
 
 		if rsi > 70:
-			print(f"{bar.symbol} is overbought, selling")
+			self.log(f"{bar.symbol} is overbought, selling")
 			self.place_order(bar.symbol, 1, OrderSide.SELL)
 		if rsi < 30:
-			print(f"{bar.symbol} is oversold, buying")
+			self.log(f"{bar.symbol} is oversold, buying")
 			self.place_order(bar.symbol, 1, OrderSide.BUY)
 
 
