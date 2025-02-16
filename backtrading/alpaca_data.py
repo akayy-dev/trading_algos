@@ -18,21 +18,40 @@ class AlpacaIntegration:
 		data.set_index(["Timestamp"], inplace=True)
 		return data
 	
-	def get_ticker_data(self, symbol: str, timeframe: TimeFrame, days_ago) -> DataFrame:
-		start_date = datetime.now() - timedelta(days = days_ago)
-		end_date = datetime.now() # end date today.
+	def get_ticker_data(self, symbol: str,  start: datetime, end: datetime, timeframe: TimeFrame, pairs=[],) -> DataFrame:
+		symbols_list = pairs + [symbol]
 
 		request = StockBarsRequest(
-			symbol_or_symbols = symbol,
-			timeframe=timeframe,
-			start=start_date,
-			end=end_date,
+			symbol_or_symbols=symbols_list,
+			start=start,
+			end=end,
+			timeframe=timeframe
 		)
+		data = self._client.get_stock_bars(request).df
 
-		bars = self._client.get_stock_bars(request)
+		# merge the pairs trading close price
+		data_reset = data.reset_index()
+		base_data = data_reset[data_reset["symbol"] == symbol]
+		base_data = base_data.set_index("timestamp")
 
-		return self._format_df(bars.df)
+		for pair in pairs:
+			pair_df = data_reset[data_reset["symbol"] == pair]
+			pair_df = pair_df.rename(columns={"close": f"{pair}_close"})
+			pair_df = pair_df[["timestamp", f"{pair}_close"]]
+			base_data = base_data.merge(pair_df, on="timestamp", how="left")
+			base_data = base_data.set_index("timestamp")
+
+		base_data = base_data.rename(columns={
+			"timestamp": "Timestamp",
+			"open": "Open",
+			"high": "High",
+			"low": "Low",
+			"close": "Close",
+			"volume": "Volume"
+		})
+		base_data = base_data.drop("symbol", axis=1)
+		return base_data
 
 if __name__ == '__main__':
 	alpaca = AlpacaIntegration(getenv('API_KEY'), getenv('SECRET_KEY'))
-	print(alpaca.get_ticker_data("SPY", TimeFrame.Day, 3650))
+	print(alpaca.get_ticker_data("SPY", ["NVDA"], datetime(2024, 1, 1), datetime(2025, 1, 1), TimeFrame.Day))
