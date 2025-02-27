@@ -8,7 +8,7 @@ from alpaca_data import AlpacaIntegration
 from os import getenv
 from alpaca.data.timeframe import TimeFrame
 import numpy
-numpy.std
+from datetime import datetime
 
 class RelativeStrengthIndex(Strategy):
 	def init(self):
@@ -27,7 +27,9 @@ class RelativeStrengthIndex(Strategy):
 
 alpaca = AlpacaIntegration(getenv("API_KEY"), getenv("SECRET_KEY"))
 
-bt = Backtest(alpaca.get_ticker_data("XOM", TimeFrame.Hour, 1825), RelativeStrengthIndex, cash=10000, commission=0.00)
+data = alpaca.get_ticker_data(symbol="SPY", timeframe=TimeFrame.Hour, start=datetime(2024, 1, 1), end=datetime(2025, 1, 1))
+
+bt = Backtest(data, RelativeStrengthIndex, cash=10000, commission=0.00)
 stats = bt.run()
 
 bt.plot()

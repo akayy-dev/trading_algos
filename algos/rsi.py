@@ -2,6 +2,7 @@ from continuum.algo import Algorithm
 
 import numpy as np
 import talib
+from data.groups import Group
 from alpaca.data.historical import StockHistoricalDataClient, NewsClient
 from alpaca.data.timeframe import TimeFrame
 from alpaca.data.requests import StockBarsRequest
@@ -24,7 +25,13 @@ class RSI(Algorithm):
 	def __init__(self):
 		super().__init__(getenv("API_KEY"), getenv("SECRET_KEY"), paper=True)
 		self.history = StockHistoricalDataClient(getenv("API_KEY"), getenv("SECRET_KEY"))
-		self.add_equity("XLK")
+
+		self.tech = Group("tech stocks")
+		self.tech.add_symbol("NVDA", 0.5)
+		self.tech.add_symbol("AAPL", 0.25)
+		self.tech.add_symbol("MSFT", 0.5)
+
+		self.add_group(self.tech, 1)
 
 	
 	async def on_bar(self, bar: Bar):

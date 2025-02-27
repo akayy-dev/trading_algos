@@ -4,9 +4,9 @@ from os import getenv
 from threading import Thread
 from typing import List
 
+from data.groups import Group
 from alpaca.data.live.crypto import CryptoDataStream
 from alpaca.data.live.stock import StockDataStream
-from alpaca.data.live.news import NewsDataStream
 from alpaca.data.models import *
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderSide, TimeInForce
@@ -29,25 +29,46 @@ class Algorithm:
 
 		self.log_file = open('log.txt', 'w')
 
+		self.weights: dict[Group, float]= {}
+
+		self.cash = self.client.get_account().cash
 	
-	@property
-	def buying_power(self):
-		return self.client.get_account().cash
+	def add_group(self, g: Group, weight: float):
+		"""Add a group"""
+		self.weights[g] = weight
+
+		for symbol in list(g.weights.keys()):
+			# subscribe to symbols in list
+			self.stream.subscribe_bars(self.on_bar, symbol)
+			self.stream.subscribe_trades(self.on_bar, symbol)
+		
+		self.log(f"Added group {g.name}")
+
+
 	
-	def place_order(self, symbol, qty, side):
+	def get_group(self, name: str):
+		return self.groups.get(name)
+	
+	def buy(self, group: Group, symbol: str):
+		iWeight = group._weights[symbol]
+		gWeight = self.weights[group]
+
+		orderAmount = (self.cash * gWeight) * iWeight
+
 		order = MarketOrderRequest(
 			symbol=symbol,
-			qty=qty,
-			side=side,
-			time_in_force = TimeInForce.GTC # good until cancelled
+			notional= orderAmount,
+			side=OrderSide.BUY,
+			time_in_force = TimeInForce.GTC
 		)
-
 		try:
+			self.log(f"Submitted order for {symbol} in {group.name} group for ${orderAmount:.2f}")
 			self.client.submit_order(order)
-			self.log(f"✅ Order placed: {side} {qty} shares of {symbol}")
 		except Exception as e:
-			self.log(f"❌ Order failed: {e}")
+			self.log(f"Order failed {e}")
 	
+	def close_position(self, symbol: str):
+		self.close_position(symbol=symbol)
 	
 	def add_equity(self, symbol):
 		"""Adds equity to watchlist"""
