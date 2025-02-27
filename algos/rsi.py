@@ -31,7 +31,7 @@ class RSI(Algorithm):
 		self.tech.add_symbol("AAPL", 0.25)
 		self.tech.add_symbol("MSFT", 0.5)
 
-		self.add_group(self.tech, 1)
+		self.add_group(self.tech, .5)
 
 	
 	async def on_bar(self, bar: Bar):

@@ -42,7 +42,7 @@ class Algorithm:
 			self.stream.subscribe_bars(self.on_bar, symbol)
 			self.stream.subscribe_trades(self.on_bar, symbol)
 		
-		self.log(f"Added group {g.name}")
+		self.log(f"Added group {g.name} with dollar balance of ${float(self.cash) * weight}")
 
 
 	
