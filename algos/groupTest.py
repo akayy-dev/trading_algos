@@ -2,7 +2,7 @@ from continuum.algo import Algorithm
 
 import numpy as np
 import talib
-from data.groups import Group
+from algos.strats.groups import Group
 from alpaca.data.historical import StockHistoricalDataClient, NewsClient
 from alpaca.data.timeframe import TimeFrame
 from alpaca.data.requests import StockBarsRequest
@@ -31,36 +31,26 @@ class RSI(Algorithm):
 		self.tech.add_symbol("AAPL", 0.25)
 		self.tech.add_symbol("MSFT", 0.5)
 
-		self.add_group(self.tech, .5)
+		self.add_group(self.tech, .20)
+		
+		self.etfs = Group("ETF Indices")
+		self.etfs.add_symbol("SPY", .5)
+		self.etfs.add_symbol("FEZ", .25)
+		self.etfs.add_symbol("NANC", .25)
+
+		self.add_group(self.etfs, .70)
+
+		self.finance = Group("Financial Stocks")
+		self.finance.add_symbol("BRK.B", 1/3)
+		self.finance.add_symbol("BAC", 1/3)
+		self.finance.add_symbol("C", 1/3)
+
+		self.add_group(self.finance, .10)
 
 	
 	async def on_bar(self, bar: Bar):
 		# get the current time
-		timestamp = bar.timestamp
-		
-		request = StockBarsRequest(
-			symbol_or_symbols = bar.symbol,
-			timeframe = TimeFrame.Day,
-			start=bar.timestamp - timedelta(days=20),
-			end_date = bar.timestamp,
-		)
-
-		data = self.history.get_stock_bars(request).df
-		data.reset_index(inplace=True)
-		
-		close_prices = data["close"].values.astype(np.float64)
-
-		rsi = talib.RSI(close_prices, timeperiod=len(close_prices) - 1)[-1]
-
-		self.log(f"RSI for {bar.symbol} @ {bar.timestamp}: {rsi}")
-
-		if rsi > 70:
-			self.log(f"{bar.symbol} is overbought, selling")
-			self.place_order(bar.symbol, 1, OrderSide.SELL)
-		if rsi < 30:
-			self.log(f"{bar.symbol} is oversold, buying")
-			self.place_order(bar.symbol, 1, OrderSide.BUY)
-
+		print(bar)
 
 
 if __name__ == '__main__':

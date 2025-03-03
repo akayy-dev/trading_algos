@@ -1,9 +1,12 @@
+from strategy import Strategy
 
 class Instrument:
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: str, strategy: Strategy):
         self.symbol = symbol
 
-        self.forecast: float
+        self.strategy = strategy
+
+        self.forecast: float = 0.0
         """+20 indicates strong buy, -20 equals strong sell"""
 
 class Group:
@@ -13,7 +16,7 @@ class Group:
 
         self.weights: dict[str, list[Instrument, float]] = {}
         
-    def add_symbol(self, symbol: str, weight: float):
+    def add_symbol(self, symbol: str, weight: float, strategy: Strategy):
         """
         Adds a symbol with its corresponding weight to the group.
 
@@ -24,5 +27,5 @@ class Group:
         Returns:
             None
         """
-        instrument = Instrument(symbol)
+        instrument = Instrument(symbol, strategy)
         self.weights[symbol] = [instrument, weight]
