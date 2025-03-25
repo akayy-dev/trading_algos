@@ -1,6 +1,7 @@
 from continuum.algo import Algorithm
 
 import numpy as np
+import sched
 import talib
 from continuum.strats.groups import Group
 from alpaca.data.historical import StockHistoricalDataClient, NewsClient
