@@ -1,4 +1,6 @@
 import { createClient } from "@alpacahq/typescript-sdk";
+import { Bar, LiveStockData } from "./types/data/live.js";
+import { LiveStockDataFactory } from "./types/data/factory.ts";
 
 
 const client = createClient({
@@ -7,14 +9,11 @@ const client = createClient({
 })
 
 
-// client.getAsset({
-//     symbol_or_asset_id: "NVDA"
-// }).then(console.log)
 
-
-const socket = new WebSocket("wss://paper-api.alpaca.markets/stream")
+const socket = new WebSocket("wss://stream.data.alpaca.markets/v2/iex")
 
 socket.addEventListener("open", (event) => {
+
     socket.send(JSON.stringify(
         {
             "action": "auth",
@@ -22,21 +21,32 @@ socket.addEventListener("open", (event) => {
             "secret": process.env["SECRET_KEY"]
         }
     ))
+    console.log("sent auth")
 
     socket.send(JSON.stringify(
         {
-            "action": "listen",
-            "data": {
-                "streams": ["trade_updates"]
-            }
+            "action": "subscribe",
+            "bars": ["AAPL"],
+            "trades": ["AAPL"]
         }
     ))
 
 });
 
 
-console.log("sent listen signal")
 
 socket.addEventListener("message", async (event) => {
-    console.log(await event.data.text())
-})
+    const data = JSON.parse(await event.data)
+    data.forEach((barData) => {
+        // avoid accidentally parsing log messages as bars
+        if (barData.T.length == 1) {
+            console.log(barData)
+            console.log(LiveStockDataFactory.parseStockData(barData))
+        }
+        else {
+            console.log(barData)
+        }
+    }
+    )
+}
+)
