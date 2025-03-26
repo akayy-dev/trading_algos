@@ -1,4 +1,4 @@
-import { Bar, LiveStockData } from "./bar.ts";
+import { Bar, LiveStockData, Trade } from "./live.js";
 
 export class LiveStockDataFactory {
     constructor() {
@@ -8,6 +8,9 @@ export class LiveStockDataFactory {
         if (data.T == "b" || data.T == "d" || data.T == "u") {
             return new Bar(data);
         }
-        return null;
+        else if (data.T == "t") {
+            return new Trade(data);
+            console.log(data)
+        }
     }
 }
