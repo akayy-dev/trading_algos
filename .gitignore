@@ -1,5 +1,2 @@
 .env
-*.html
-.python-version
-__pycache__/
-log.txt
+node_modules/

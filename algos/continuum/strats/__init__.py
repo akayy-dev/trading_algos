@@ -1,1 +1,0 @@
-"""Holds strategies and their base class"""
