@@ -8,10 +8,8 @@ export abstract class LiveStockData {
     }) {
         this.symbol = data.S;
         this.timestamp = new Date(data.t);
-        this.parseData(data)
     }
 
-    abstract parseData(data): void;
 
     public getSymbol(): string {
         return this.symbol;
@@ -22,20 +20,21 @@ export abstract class LiveStockData {
 }
 
 export class Bar extends LiveStockData {
-    private open: number;
-    private high: number;
-    private low: number;
-    private close: number;
-    private volume: number;
+    readonly open: number;
+    readonly high: number;
+    readonly low: number;
+    readonly close: number;
+    readonly volume: number;
 
-
-    parseData(data: any): void {
-        this.open = data.open;
-        this.high = data.h
-        this.low = data.l
-        this.close = data.c
-        this.volume = data.v
+    constructor(data: any) {
+        super(data);
+        this.open = data.o;
+        this.high = data.h;
+        this.low = data.l;
+        this.close = data.c;
+        this.volume = data.v;
     }
+
 
     public getOpen(): number {
         return this.open;
@@ -61,14 +60,17 @@ export class Bar extends LiveStockData {
 export class Trade extends LiveStockData {
     private id: number;
     private size: number;
-    private condition: string[]
+    private condition: string[];
     private price: number;
-    parseData(data: any): void {
-        this.id = data.i
-        this.size = data.s
-        this.price = data.p
-        this.condition = data.c
+
+    constructor(data: any) {
+        super(data);
+        this.id = data.i;
+        this.size = data.s;
+        this.price = data.p;
+        this.condition = data.c;
     }
+
 
     public getId(): number {
         return this.id;
