@@ -1,7 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "@alpacahq/typescript-sdk": "^0.0.31-preview",
-    "@types/node": "^22.13.13"
-  }
-}
