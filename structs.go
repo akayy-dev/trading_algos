@@ -4,11 +4,6 @@ import (
 	"time"
 )
 
-// All JSON gets marshalled to this first, then we marshall to the other messages depending on what the type is
-type MessageType struct {
-	Type string `json:"T"`
-}
-
 type AuthenticationMessage []struct {
 	T   string `json:"T"`
 	Msg string `json:"msg"`
@@ -27,7 +22,7 @@ type Subscriptions []struct {
 	CancelErrors []string      `json:"cancelErrors"`
 }
 
-type Trades []struct {
+type Trade struct {
 	Type      string    `json:"T"`
 	ID        int       `json:"i"`
 	Symbol    string    `json:"S"`

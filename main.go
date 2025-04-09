@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"sync"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	"github.com/charmbracelet/log"
@@ -15,7 +14,8 @@ import (
 )
 
 type Strategy interface {
-	onTrade(trades Trades)
+	onTrade(trades []Trade)
+	onBar(bars []Bar)
 }
 
 type SMA struct {
@@ -23,10 +23,16 @@ type SMA struct {
 	client  alpaca.Client
 }
 
-func (s SMA) onTrade(trades Trades) {
+func (s SMA) onTrade(trades []Trade) {
 	for _, trade := range trades {
 		log.Infof("Trade executed on %s for %.2f", trade.Symbol, trade.Price)
 
+	}
+}
+
+func (s SMA) onBar(bars []Bar) {
+	for _, bar := range bars {
+		log.Infof("OHLCV for %v: Open: $%.2f, High: $%.2f, Low: $%.2f, Close: $%.2f", bar.Symbol, bar.Open, bar.High, bar.Low, bar.Close)
 	}
 }
 
@@ -38,7 +44,16 @@ func subscribe(s Strategy, symbols []string, interrupt chan os.Signal) {
 	API_KEY := os.Getenv("API_KEY")
 	SECRET := os.Getenv("SECRET_KEY")
 
-	u := url.URL{Scheme: "wss", Host: "stream.data.alpaca.markets", Path: "/v2/iex"}
+	var feed string
+	_, debug := os.LookupEnv("DEBUG")
+
+	if debug {
+		feed = "/v2/test"
+	} else {
+		feed = "/v2/iex"
+	}
+
+	u := url.URL{Scheme: "wss", Host: "stream.data.alpaca.markets", Path: feed}
 	log.Infof("Connecting to %s", u.String())
 
 	headers := http.Header{}
@@ -51,27 +66,24 @@ func subscribe(s Strategy, symbols []string, interrupt chan os.Signal) {
 		log.Fatal("Error attempting to connect to websocket: ", err)
 	}
 
-	for _, symbol := range symbols {
-		subscribepayload := map[string]interface{}{
-			"action": "subscribe",
-			"trades": []string{symbol},
-		}
+	subscribepayload := map[string]interface{}{
+		"action": "subscribe",
+		"trades": symbols,
+		"bars":   symbols,
+	}
 
-		err = c.WriteJSON(subscribepayload)
+	err = c.WriteJSON(subscribepayload)
 
-		if err != nil {
-			log.Fatal("error subscribing: ", err)
-		} else {
-			log.Infof("Successfully subscribed to $%v", symbol)
-		}
-
+	if err != nil {
+		log.Fatal("error subscribing: ", err)
+	} else {
+		log.Infof("Successfully subscribed to $%v", symbols)
 	}
 
 	// Responsible for handling different messages
 	go func() {
 
 		// waitgroup for concurrent trade and bar handling
-		var wg sync.WaitGroup
 
 		for {
 			_, message, err := c.ReadMessage()
@@ -82,7 +94,7 @@ func subscribe(s Strategy, symbols []string, interrupt chan os.Signal) {
 			}
 
 			// Parse the raw message into a list of maps
-			var msgMap []map[string]interface{}
+			var msgMap []map[string]any
 			if err := json.Unmarshal(message, &msgMap); err != nil {
 				log.Error("Error unmarshalling JSON to list of maps:", err)
 				return
@@ -92,21 +104,27 @@ func subscribe(s Strategy, symbols []string, interrupt chan os.Signal) {
 				msgType := rawMsg["T"]
 				switch msgType {
 				case "t":
-					var trade Trades
-					if err := json.Unmarshal(message, &trade); err != nil {
+					var trades []Trade
+					if err := json.Unmarshal(message, &trades); err != nil {
 						log.Error("Error occured while Unmarshaling trade data")
 						fmt.Println(string(message))
 					}
+					s.onTrade(trades)
 
-					// concurrently call trade updates
-					wg.Add(1)
-					go func(t Trades) {
-						// "pop" from waitgroup after onTrade finishes.
-						defer wg.Done()
-						s.onTrade(t)
-					}(trade)
-
+				case "u":
+					fallthrough
+				case "d":
+					fallthrough
+				case "b":
+					// bars
+					var bar []Bar
+					if err := json.Unmarshal(message, &bar); err != nil {
+						log.Error("Error occured while unmarshaling rawMsg", err)
+						fmt.Println(string(message))
+					}
+					s.onBar(bar)
 				}
+
 			}
 
 		}
