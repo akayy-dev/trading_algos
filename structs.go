@@ -27,7 +27,7 @@ type Subscriptions []struct {
 	CancelErrors []string      `json:"cancelErrors"`
 }
 
-type Trade []struct {
+type Trades []struct {
 	Type      string    `json:"T"`
 	ID        int       `json:"i"`
 	Symbol    string    `json:"S"`

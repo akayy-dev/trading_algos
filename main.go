@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"sync"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	"github.com/charmbracelet/log"
@@ -14,7 +15,7 @@ import (
 )
 
 type Strategy interface {
-	onTrade(t Trade)
+	onTrade(trades Trades)
 }
 
 type SMA struct {
@@ -22,8 +23,8 @@ type SMA struct {
 	client  alpaca.Client
 }
 
-func (s SMA) onTrade(t Trade) {
-	for _, trade := range t {
+func (s SMA) onTrade(trades Trades) {
+	for _, trade := range trades {
 		log.Infof("Trade executed on %s for %.2f", trade.Symbol, trade.Price)
 
 	}
@@ -68,6 +69,10 @@ func subscribe(s Strategy, symbols []string, interrupt chan os.Signal) {
 
 	// Responsible for handling different messages
 	go func() {
+
+		// waitgroup for concurrent trade and bar handling
+		var wg sync.WaitGroup
+
 		for {
 			_, message, err := c.ReadMessage()
 
@@ -87,12 +92,20 @@ func subscribe(s Strategy, symbols []string, interrupt chan os.Signal) {
 				msgType := rawMsg["T"]
 				switch msgType {
 				case "t":
-					var trade Trade
+					var trade Trades
 					if err := json.Unmarshal(message, &trade); err != nil {
 						log.Error("Error occured while Unmarshaling trade data")
 						fmt.Println(string(message))
 					}
-					s.onTrade(trade)
+
+					// concurrently call trade updates
+					wg.Add(1)
+					go func(t Trades) {
+						// "pop" from waitgroup after onTrade finishes.
+						defer wg.Done()
+						s.onTrade(t)
+					}(trade)
+
 				}
 			}
 
